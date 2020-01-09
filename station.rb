@@ -12,7 +12,7 @@ class Station
     @@stations << self
     register_instance
   end
-  #метод добавил исходя из задания, но он не работает из-за 2й строки метода validate! как исправить пока не придумал.
+
   def valid?
     validate!
     true
@@ -22,6 +22,12 @@ class Station
 
   def self.all
     @@stations
+  end
+
+  def map_trains
+    @trains.each do |train|
+      yield(train)
+    end
   end
 
   def show_trains_with_type(type)

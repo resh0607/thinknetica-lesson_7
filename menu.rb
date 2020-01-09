@@ -1,5 +1,4 @@
 class Menu
-
   def initialize
     @stations = []
     @trains = []
@@ -9,7 +8,7 @@ class Menu
 
   def start
     loop do 
-      puts "Что нужно сделать?:\n\t1.Создать станцию\n\t2.Создать поезд\n\t3.Создать маршрут\n\t4.Изменить маршрут\n\t5.Назначить маршрут поезду\n\t6.Добавить вагон к поеду\n\t7.Отцепить вагон\n\t8.Переместить поезд\n\t9.Посмотреть список станций и список поездов на станции\n\t0.Выйти"
+      puts "Что нужно сделать?:\n\t1.Создать станцию\n\t2.Создать поезд\n\t3.Создать маршрут\n\t4.Изменить маршрут\n\t5.Назначить маршрут поезду\n\t6.Добавить вагон к поеду\n\t7.Отцепить вагон\n\t8.Переместить поезд\n\t9.Посмотреть общую информацию о станциях и поездах\n\t10.Занять место в вагоне\n\t0.Выйти"
       choice = gets.to_i
       case choice 
       when 1
@@ -30,6 +29,8 @@ class Menu
         move_train
       when 9
         summary_info
+      when 10
+        take_place_in_wagon
       when 0
         break
       end
@@ -59,6 +60,12 @@ class Menu
   def all_free_wagons_list
     @wagons.reject { |wagon| wagon.train == nil }.each.with_index(1) do |wagon, index|
       puts "#{index}.id - #{wagon.id}, тип - #{wagon.type}."
+    end
+  end
+
+  def single_train_wagons_list(train)
+    train.wagons.each.with_index(1) do |wagon, index|
+      puts "#{index}. id вагона - #{wagon.id}, тип вагона - #{wagon.type}"
     end
   end
 
@@ -171,7 +178,16 @@ class Menu
     id = gets.chomp.to_s
     puts "Введите тип вагона \n\t1.Грузовой \n\t2.Пассажирский" 
     type = gets.to_i
-    type == 1 ? wagon = WagonCargo.new(id) : wagon = WagonPass.new(id)
+    if type == 1
+      puts 'Введите общий объем вагона'
+      capacity = gets.to_i
+      wagon = WagonCargo.new(id, capacity)
+    elsif type == 2
+      puts 'Введите общее количество мест в вагоне'
+      seats_quantity = gets.to_i
+      wagon = WagonPass.new(id, seats_quantity) 
+    end
+    # type == 1 ? wagon = WagonCargo.new(id) : wagon = WagonPass.new(id)
   rescue RuntimeError => error
     puts "Ошибка: #{error.message}"
     attempts += 1
@@ -236,19 +252,62 @@ class Menu
   end
   
   def summary_info
-    puts "Список всех станций.\nВыберите станцию для просмотра дополнительной информации:"
-    all_stations_list
-    index = gets.to_i
-    station = @stations[index - 1]
-    if station.trains.empty?
-      raise 'На этой станции нет поездов'
-    else
-      station.trains.each do |train|
-        puts "Номер моезда - #{train.number}, тип - #{train.type}"
+    puts "Показать информацию о\n\t1.Станции\n\t2.Поезде"
+    choice = gets.to_i
+    case choice 
+    when 1
+      puts "Список всех станций.\nВыберите станцию для просмотра дополнительной информации:"
+      all_stations_list
+      index = gets.to_i
+      station = @stations[index - 1]
+      if station.trains.empty?
+        raise 'На этой станции нет поездов'
+      else 
+        station.map_trains { |train| puts "Номер поезда - #{train.number}, тип - #{train.type}, кол-во вагонов - #{train.wagons.size}" }
+      end
+    when 2
+      puts "Список всех поездов.\nВыберите вагон для просмотра дополнительной информации:"
+      all_trains_list
+      index = gets.to_i
+      train = @trains[index - 1]
+      if train.wagons.empty?
+        raise 'У этого поезда нет вагонов'
+      else 
+        train.map_wagons { |wagon| puts "ID вагона - #{wagon.id}, тип - #{wagon.type}, #{wagon.type == 'Пассажирский' ? "Свободных мест #{wagon.free_seats}, Занятых мест #{wagon.occupied_seats_quantity}" : "Свободный объем #{wagon.free_capacity}, Занятый объем #{wagon.occupied_capacity}"}" }
       end
     end
   end
+
+  def take_place_in_wagon
+    puts 'Выберите поезд:'
+    all_trains_list
+    index = gets.to_i
+    train = @trains[index - 1]
+    puts "Вы выбрали #{train.type} поезд. Выберите вагон, чтобы занять место:"
+    single_train_wagons_list(train)
+    index = gets.to_i
+    wagon = train.wagons[index - 1]
+    if wagon.type == 'Пассажирский'
+      puts 'Занять одно место?(да/нет)'
+      choice = gets.strip
+      if choice == 'да'
+        wagon.take_seat
+        puts "Было занято одно место, осталось #{wagon.free_seats}"
+      end
+    elsif wagon.type == 'Грузовой'
+      puts "Какой объем занять?, доступно - #{wagon.free_capacity}"
+      cargo_volume = gets.to_i
+      wagon.load(cargo_volume)
+      puts "Был занят объем - #{cargo_volume}, осталось - #{wagon.free_capacity}"
+    end
+  end
 end
+
+    
+  
+  
+
+
 
 
 

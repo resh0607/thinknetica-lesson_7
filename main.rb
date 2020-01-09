@@ -13,5 +13,3 @@ require_relative 'wagon_pass'
 controller = Menu.new
 controller.start
 
-
-
